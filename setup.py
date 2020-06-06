@@ -29,7 +29,7 @@ setup(
     description='Goodwe USB inverter to MQTT server',
     license='GPLv3+',
     long_description=read("README.md"),
-    author= 'Louis Lagendijk based on version by Arjen (sircuri)',
+    author= 'Louis Lagendijk based on version by Arjen (sircuri): Arjen <arjen@vanefferenonline.nl>',
     author_email='louis.lagendijk@gmail.com',
     install_requires=['configparser', 'paho-mqtt', 'simplejson', 'ioctl_opt', 'pyudev'],
     classifiers=[

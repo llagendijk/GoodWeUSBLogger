@@ -1,16 +1,12 @@
 # GoodWeUSBLogger
 Python based logger for GoodWe inverters using USB.
 
-based on: https://github.com/jantenhove/GoodWeLogger
-
-## Todo ##
-[TODO List](GoodWeUSBLogger)
-[[TODO List|GoodWeUSBLogger]]
+based on: https://github.com/sircuri/GoodWeUSBLogger which in its turn was based 
+on https://github.com/jantenhove/GoodWeLogger 
 
 ## Required Python version
 
-I'm currently using **Python 2.7.13** on a Raspberry Pi for this project. It has been verified that it is **_NOT_** working with Python 3.
-Python 2.7 is already installed (at least on my Raspberry Zero W)
+This software is developed for **python3** (tested on python 3.5.3) but also works under python 2.7.
 
 ```bash
 sudo apt-get update
@@ -25,8 +21,11 @@ sudo apt-get install -y python-pip
 * ioctl_opt
 * enum
 
+these imodules should however be installed when you install the tool as described below.
+cd into the directory where the sources are located.
+
 ```bash
-sudo python -m pip install configparser paho-mqtt pyudev ioctl_opt enum
+python3 setup.py install
 ```
 
 ## Config
@@ -42,37 +41,66 @@ Create file _/etc/goodwe.conf_:
 
 ```
 [inverter]
-#loglevel = DEBUG
-#pollinterval = 2500
+loglevel = DEBUG
+pollinterval = 5000
 #vendorId = 0084
 #modelId = 0041
 #logfile = /var/log/goodwe.log
 
 [mqtt]
-#server = localhost
-#port = 1883
-#topic = goodwe
+# server = localhost
+# port = 1883
+# topic = goodwe
 #clientid = goodwe-usb
-#username = 
-#password = mypassword
+# username = goodwe
+# password = xxxxxx
+# domoticz-topic = domoticz/in
+
+[domoticz]
+online = 96
+power_daytotal = 104
+power_grand_total = 105
+errorMessage = 97
+mains_frequency = 102
+total_hours = 103
+mains_current = 95
+input1_current = 93
+input2_current = 94
+current_power = 99
+temperature = 100
+mains_voltage = 92
+input1_voltage = 90
+input2_voltage = 91
 
 ```
 Almost all configuration parameters have sensible defaults and are commented out. The values shown are the defaults. If you need to change a 
 setting remove the # in front of the parameter name.
 Only when username and the optional password are set, they will be used. Setting the username will trigger authentication for the MQTT server. 
-Password can optionally be set.
+Password can optionally be set. The domoticz-topic (when defined) triggers the update to domoticz. 
+The domoticz section is only read/used when domoticz-topic is set. This section contains the idx values as defined in Domoticz for the known 
+data items. 
 
 ## Usage
 
 The program will lookup the device on its own by enumerating all USB devices and look for the **_vendorId_** and **_modelId_** as listed above.
-My own two GoodWe solar inverters have these vendor and model id. You can lookup your own by connecting the USB device to the raspberry and look for these values in the system logs. These _should_ be the correct IDs for all GoodWe solar inverters.
+My tested GoodWe solar inverters all have these vendor and model id. You can lookup your own by connecting the USB device to the raspberry and 
+look for these values in the system logs. These _should_ be the correct IDs for all GoodWe solar inverters.
 
-The application needs to be run as **root** in the current setup. It tries to write a pid-file in _/var/run_ and the high level logs for the daemon are written to _/var/log/goodwe.log_
-To start the daemon application:
+The application needs to be run as **root** in the current setup. The high level logs for the daemon are written to stdout/stderr or the 
+defined logfile (not normally needed).
+
+To start the daemon application for testing:
 
 ```bash
-$ sudo ./GoodWe.py start
+$ sudo  goodweusb2mqtt
 ```
+
+The systemd service unit goodweusb2mqtt.service in installed when the setup s run as described above.
+It may be necessary to correct the path to the executable when pthon installs it in a different place.
+
+'''bash
+systemctl enable goodweusb2mqtt.service
+systemctl start goodweusb2mqtt.service
 
 ## Inverter information
 
@@ -88,15 +116,3 @@ The application will start to deliver information packets on the configured MQTT
 The channels are composed as:
 * '**goodwe** / **_SERIALID_** / **data**' for the data packets
 * '**goodwe** / **_SERIALID_** / **online**' for a simple 1 or 0 as the online status.
-
-## Optional
-
-Currently I use the 'restartd' program to keep this process running using the following config:
-
-File: /etc/restartd.conf:
-
-```bash
-goodwe "GoodWe.py" "cd /opt/goodweusblogger; ./GoodWe.py restart"
-```
-
-I have everything running from _/opt/goodweusblogger_. If you have your application installed somewhere else you need to update the above statement.

@@ -47,8 +47,8 @@ class Inverter2Domo:
         # invertertype = inverterData.inverterType
         runningInfo = inverterData.runningInfo
         for key in self.keyDict:
-            idx = self.keyDict["idx"]
-            # TODO: fixe/expand for 3 phase inverters
+            idx = self.keyDict[key]
+            # TODO: fix/expand for 3 phase inverters
             if key == "online":
                 # nothing to do
                 dummy = key
