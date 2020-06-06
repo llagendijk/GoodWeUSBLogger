@@ -4,7 +4,10 @@ from https://github.com/vpelletier/python-hidraw
  copied and renamed due to the existence of another 'hidraw' package on pypi which seems to conflict in some way.
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import ctypes
+import struct
 import collections
 import fcntl
 import ioctl_opt
@@ -21,41 +24,46 @@ BUS_VIRTUAL = 0x06
 # hid.h
 _HID_MAX_DESCRIPTOR_SIZE = 4096
 
-if sys.version < '3':
+if sys.version[0] < '3':
+
     def b(x):
         return x
 else:
     import codecs
+
     def b(x):
         return codecs.latin_1_encode(x)[0]
+
 
 # hidraw.h
 class _hidraw_report_descriptor(ctypes.Structure):
     _fields_ = [
         ('size', ctypes.c_uint),
         ('value', ctypes.c_ubyte * _HID_MAX_DESCRIPTOR_SIZE),
-        ]
+    ]
+
 
 class _hidraw_devinfo(ctypes.Structure):
     _fields_ = [
         ('bustype', ctypes.c_uint),
         ('vendor', ctypes.c_short),
         ('product', ctypes.c_short),
-        ]
+    ]
+
 
 _HIDIOCGRDESCSIZE = ioctl_opt.IOR(ord('H'), 0x01, ctypes.c_int)
 _HIDIOCGRDESC = ioctl_opt.IOR(ord('H'), 0x02, _hidraw_report_descriptor)
 _HIDIOCGRAWINFO = ioctl_opt.IOR(ord('H'), 0x03, _hidraw_devinfo)
-_HIDIOCGRAWNAME = lambda len: ioctl_opt.IOC(ioctl_opt.IOC_READ, ord('H'),
-                                            0x04, len)
-_HIDIOCGRAWPHYS = lambda len: ioctl_opt.IOC(ioctl_opt.IOC_READ, ord('H'),
-                                            0x05, len)
+_HIDIOCGRAWNAME = lambda len: ioctl_opt.IOC(ioctl_opt.IOC_READ, ord('H'), 0x04,
+                                            len)
+_HIDIOCGRAWPHYS = lambda len: ioctl_opt.IOC(ioctl_opt.IOC_READ, ord('H'), 0x05,
+                                            len)
 _HIDIOCSFEATURE = lambda len: ioctl_opt.IOC(
-    ioctl_opt.IOC_WRITE|ioctl_opt.IOC_READ, ord('H'), 0x06, len)
+    ioctl_opt.IOC_WRITE | ioctl_opt.IOC_READ, ord('H'), 0x06, len)
 _HIDIOCGFEATURE = lambda len: ioctl_opt.IOC(
-    ioctl_opt.IOC_WRITE|ioctl_opt.IOC_READ, ord('H'), 0x07, len)
+    ioctl_opt.IOC_WRITE | ioctl_opt.IOC_READ, ord('H'), 0x07, len)
 _HIDIOCSREPORT = lambda len: ioctl_opt.IOC(
-    ioctl_opt.IOC_WRITE|ioctl_opt.IOC_READ, ord('H'), 0x08, len)
+    ioctl_opt.IOC_WRITE | ioctl_opt.IOC_READ, ord('H'), 0x08, len)
 
 HIDRAW_FIRST_MINOR = 0
 HIDRAW_MAX_DEVICES = 64
@@ -63,10 +71,12 @@ HIDRAW_BUFFER_SIZE = 64
 
 DevInfo = collections.namedtuple('DevInfo', ['bustype', 'vendor', 'product'])
 
+
 class HIDRaw(object):
     """
     Provides methods to access hidraw device's ioctls.
     """
+
     def __init__(self, device):
         """
         device (file, fileno)
@@ -88,7 +98,7 @@ class HIDRaw(object):
         self._ioctl(_HIDIOCGRDESCSIZE, size, True)
         descriptor.size = size
         self._ioctl(_HIDIOCGRDESC, descriptor, True)
-        return ''.join(chr(x) for x in descriptor.value[:size.value])
+        return b''.join(chr(x) for x in descriptor.value[:size.value])
 
     # TODO: decode descriptor into a python object
     #def getReportDescriptor(self):
@@ -122,24 +132,27 @@ class HIDRaw(object):
         self._ioctl(_HIDIOCGRAWPHYS(length), name, True)
         return name.value
 
-
     def sendOutputReport(self, report, report_num=0):
         """
         Send an output report.
         """
         length = len(report) + 1
-        buf = ctypes.create_string_buffer(b(chr(report_num) + report), length)
+        buf = ctypes.create_string_buffer(
+            struct.pack("B", report_num) + report, length)
         self._device.write(buf)
 
+
+# sendFeatureReport seems to be unused, remove it?
 
     def sendFeatureReport(self, report, report_num=0):
         """
         Send a feature report.
         """
         length = len(report) + 1
-        buf = ctypes.create_string_buffer(b(chr(report_num) + report), length)
+        buf = ctypes.create_string_buffer(
+            b(struct.pack("B", report_num) + report), length)
         self._ioctl(_HIDIOCSFEATURE(length), buf, True)
-        print _HIDIOCSFEATURE(length)
+        print(_HIDIOCSFEATURE(length))
 
     def getFeatureReport(self, report_num=0, length=63):
         """
