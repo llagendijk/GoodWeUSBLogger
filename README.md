@@ -21,7 +21,10 @@ sudo apt-get install -y python-pip
 * ioctl_opt
 * enum
 
-these imodules should however be installed when you install the tool as described below.
+these modules should however be installed auomatically when you install the tool as described below.
+
+## Installation
+
 cd into the directory where the sources are located.
 
 ```bash
@@ -75,15 +78,19 @@ input2_voltage = 91
 ```
 Almost all configuration parameters have sensible defaults and are commented out. The values shown are the defaults. If you need to change a 
 setting remove the # in front of the parameter name.
-Only when username and the optional password are set, they will be used. Setting the username will trigger authentication for the MQTT server. 
-Password can optionally be set. The domoticz-topic (when defined) triggers the update to domoticz. 
+
+Only when username and the optional password are set, authentication will be used for MQTT-server. 
+Setting the username will trigger authentication for the MQTT server. 
+Password can optionally be set. 
+
+The domoticz-topic (when defined) triggers the update to domoticz. 
 The domoticz section is only read/used when domoticz-topic is set. This section contains the idx values as defined in Domoticz for the known 
 data items. 
 
 ## Usage
 
 The program will lookup the device on its own by enumerating all USB devices and look for the **_vendorId_** and **_modelId_** as listed above.
-My tested GoodWe solar inverters all have these vendor and model id. You can lookup your own by connecting the USB device to the raspberry and 
+The tested GoodWe solar inverters all have these vendor and model id. You can lookup your own by connecting the USB device to the raspberry and 
 look for these values in the system logs. These _should_ be the correct IDs for all GoodWe solar inverters.
 
 The application needs to be run as **root** in the current setup. The high level logs for the daemon are written to stdout/stderr or the 
@@ -94,10 +101,12 @@ To start the daemon application for testing:
 ```bash
 $ sudo  goodweusb2mqtt
 ```
+Unless the logfile is defined in the configuration file, all output will be sent to the terminal.
 
-The systemd service unit goodweusb2mqtt.service in installed when the setup s run as described above.
-It may be necessary to correct the path to the executable when pthon installs it in a different place.
+A systemd service unit goodweusb2mqtt.service in installed in /usr/lib/systemd/system when the setup is run as described above.
+It may be necessary to correct the path to the executable when python installs it in a different place.
 
+To enable automotic start at boot and start the service execute:
 '''bash
 systemctl enable goodweusb2mqtt.service
 systemctl start goodweusb2mqtt.service
